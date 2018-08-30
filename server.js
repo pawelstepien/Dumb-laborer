@@ -8,13 +8,38 @@ const html = content => {
     <html>
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-            <div></div>
+            <style type="text/css">
+                * {
+                    margin: 0;
+                    padding: 0;
+                }
+                #resuls {
+                    width: 100vw;
+                }
+                .half-col {
+                    width: 50%;
+                }
+            </style>
         </head>
         <body> 
             ${content}
         </body> 
     </html>`;
 };
+
+const createTable = (html, css) => {
+    return  `
+    <table id="results">
+        <tr>
+            <td id="html-col" class="half-col">
+                ${html}
+            </td>
+            <td id="css-col" class="half-col">
+                ${css}
+            </td>
+        <tr>
+    </table>`
+}
 
 const form = `
 <form method="POST">
@@ -24,12 +49,27 @@ const form = `
 </form>
 `;
 
-const getDimensions = (file) => {
+
+
+const getDimensions = file => {
     const dimensions = sizeOf(file);
-    console.log('aa', file)
-    return dimensions.width + 'x' + dimensions.height;
+    return {width: dimensions.width, height: dimensions.height};
 }
 
+const generateTag = file => {
+    let id  = file.split('/');
+    id = id[id.length - 1].split('\.')[0];
+    return `&lt;img src="${file}" id="${id}"&gt;`;
+}
+
+const generateRuleset = file => {
+    let id  = file.split('/');
+    id = id[id.length - 1].split('\.')[0];
+    const dimensions = getDimensions(file);
+    return `#${id} {\n
+        @include sizeOnExpand(${dimensions.width}, ${dimensions.height});\n
+    }`;
+}
 
 const server = http.createServer((req, res) => {
     if(req.method == "POST") {
@@ -44,7 +84,7 @@ const server = http.createServer((req, res) => {
                         html(form + 
                         `<ul>
                             ${files.filter(file => {return file.match(/\.png|\.jpg|\.jpeg|\.gif/) !== null})
-                            .map(file => {return `<li>${file + ' ' + getDimensions(path + '\\' + file)}</li>`})
+                            .map(file => {return `<li>${generateTag(path + '/' + file)}</li>`})
                             .join('')}
                         </ul>`)
                     );
@@ -55,16 +95,7 @@ const server = http.createServer((req, res) => {
     } else if (req.method == "GET") {
         res.write(html(form));
     }
-    
-    // fs.readFile('./file.html/', (error, data) => {
-    //     res.writeHead(200, 'text/html');
-        
-
-    //     res.write();
-
-    //     res.end();
-    // });
-
 });
+
 server.listen(1337);
 console.log('Server is running');
